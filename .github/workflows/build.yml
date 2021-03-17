@@ -1,4 +1,4 @@
-name: Pybind11 CI
+name: Python Package Build CI
 
 on:
   push:
