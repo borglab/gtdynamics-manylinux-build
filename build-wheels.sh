@@ -3,9 +3,9 @@
 CURRDIR=$(pwd)
 
 # Install latest version of GTSAM
-sudo add-apt-repository -y ppa:borglab/gtsam-develop
-sudo apt-get -y update
-sudo apt-get install -y libgtsam-dev libgtsam-unstable-dev
+add-apt-repository -y ppa:borglab/gtsam-develop
+apt-get -y update
+apt-get install -y libgtsam-dev libgtsam-unstable-dev
 
 # Clone GTDynamics
 git clone https://github.com/borglab/gtdynamics.git -b master /gtdynamics
