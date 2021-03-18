@@ -50,62 +50,57 @@ touch ${PYTHON_LIBRARY}
 
 declare -a PYTHON_VERSION=( $1 )
 
-# Get the python version numbers only by splitting the string
-split_array=(${PYTHON_VERSION//@/ })
-PY_VERSION_NUMBER=${split_array[1]}
-
 # Compile wheels
-for PYVER in ${PYTHON_VERSION[@]}; do
-    PYBIN="/usr/local/opt/$PYVER/bin"
-    "${PYBIN}/pip3" install -r ./requirements.txt
-    PYTHONVER="$(basename $(dirname $PYBIN))"
-    BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
-    mkdir -p $BUILDDIR
-    cd $BUILDDIR
-    export PATH=$PYBIN:$PYBIN:/usr/local/bin:$ORIGPATH
-    "${PYBIN}/pip3" install delocate
+PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
+"${PYBIN}/pip3" install -r ./requirements.txt
+PYTHONVER="$(basename $(dirname $PYBIN))"
+BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
+mkdir -p $BUILDDIR
+cd $BUILDDIR
+export PATH=$PYBIN:$PYBIN:/usr/local/bin:$ORIGPATH
+"${PYBIN}/pip3" install delocate
 
-    PYTHON_EXECUTABLE=${PYBIN}/python${PY_VERSION_NUMBER}
-    #PYTHON_INCLUDE_DIR=$( find -L ${PYBIN}/../include/ -name Python.h -exec dirname {} \; )
+PYTHON_EXECUTABLE=${PYBIN}/python${PYTHON_VERSION}
+#PYTHON_INCLUDE_DIR=$( find -L ${PYBIN}/../include/ -name Python.h -exec dirname {} \; )
 
-    # echo ""
-    # echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
-    # echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
-    # echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
-    
-    cmake $CURRDIR/gtsam -DCMAKE_BUILD_TYPE=Release \
-        -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
-        -DGTSAM_USE_QUATERNIONS=OFF \
-        -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-        -DGTSAM_PYTHON_VERSION=$PY_VERSION_NUMBER \
-        -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-        -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
-        -DCMAKE_INSTALL_PREFIX="$BUILDDIR/../gtsam_install" \
-        -DBoost_USE_STATIC_LIBS=ON \
-        -DBoost_USE_STATIC_RUNTIME=ON \
-        -DBOOST_ROOT=$CURRDIR/boost_install \
-        -DCMAKE_PREFIX_PATH=$CURRDIR/boost_install/lib/cmake/Boost-1.73.0/ \
-        -DBoost_NO_SYSTEM_PATHS=OFF \
-        -DBUILD_STATIC_METIS=ON \
-        -DGTSAM_BUILD_PYTHON=ON \
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-    ec=$?
+# echo ""
+# echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
+# echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
+# echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 
-    if [ $ec -ne 0 ]; then
-        echo "Error:"
-        cat ./CMakeCache.txt
-        exit $ec
-    fi
-    set -e -x
-    
-    make -j$(sysctl -n hw.logicalcpu) install
-    
-    # "${PYBIN}/pip" wheel . -w "/io/wheelhouse/"
-    cd python
-    
-    "${PYBIN}/python${PY_VERSION_NUMBER}" setup.py bdist_wheel
-    cp ./dist/*.whl $CURRDIR/wheelhouse_unrepaired
-done
+cmake $CURRDIR/gtsam -DCMAKE_BUILD_TYPE=Release \
+    -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
+    -DGTSAM_USE_QUATERNIONS=OFF \
+    -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+    -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
+    -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+    -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
+    -DCMAKE_INSTALL_PREFIX="$BUILDDIR/../gtsam_install" \
+    -DBoost_USE_STATIC_LIBS=ON \
+    -DBoost_USE_STATIC_RUNTIME=ON \
+    -DBOOST_ROOT=$CURRDIR/boost_install \
+    -DCMAKE_PREFIX_PATH=$CURRDIR/boost_install/lib/cmake/Boost-1.73.0/ \
+    -DBoost_NO_SYSTEM_PATHS=OFF \
+    -DBUILD_STATIC_METIS=ON \
+    -DGTSAM_BUILD_PYTHON=ON \
+    -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+ec=$?
+
+if [ $ec -ne 0 ]; then
+    echo "Error:"
+    cat ./CMakeCache.txt
+    exit $ec
+fi
+set -e -x
+
+make -j$(sysctl -n hw.logicalcpu) install
+
+# "${PYBIN}/pip" wheel . -w "/io/wheelhouse/"
+cd python
+
+"${PYBIN}/python${PYTHON_VERSION}" setup.py bdist_wheel
+cp ./dist/*.whl $CURRDIR/wheelhouse_unrepaired
+
 
 # Bundle external shared libraries into the wheels
 for whl in $CURRDIR/wheelhouse_unrepaired/*.whl; do
