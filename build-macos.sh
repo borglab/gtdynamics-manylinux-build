@@ -41,21 +41,21 @@ cd $CURRDIR
 mkdir -p $CURRDIR/wheelhouse_unrepaired
 mkdir -p $CURRDIR/wheelhouse
 
-git clone https://github.com/borglab/gtsam.git -b prerelease/4.1.1
+git clone https://github.com/borglab/gtsam.git -b develop
 
 ORIGPATH=$PATH
 
 PYTHON_LIBRARY=$(cd $(dirname $0); pwd)/libpython-not-needed-symbols-exported-by-interpreter
 touch ${PYTHON_LIBRARY}
 
-declare -a PYTHON_VERS=( $1 )
+declare -a PYTHON_VERSION=( $1 )
 
 # Get the python version numbers only by splitting the string
-split_array=(${PYTHON_VERS//@/ })
-VERSION_NUMBER=${split_array[1]}
+split_array=(${PYTHON_VERSION//@/ })
+PY_VERSION_NUMBER=${split_array[1]}
 
 # Compile wheels
-for PYVER in ${PYTHON_VERS[@]}; do
+for PYVER in ${PYTHON_VERSION[@]}; do
     PYBIN="/usr/local/opt/$PYVER/bin"
     "${PYBIN}/pip3" install -r ./requirements.txt
     PYTHONVER="$(basename $(dirname $PYBIN))"
@@ -65,7 +65,7 @@ for PYVER in ${PYTHON_VERS[@]}; do
     export PATH=$PYBIN:$PYBIN:/usr/local/bin:$ORIGPATH
     "${PYBIN}/pip3" install delocate
 
-    PYTHON_EXECUTABLE=${PYBIN}/python3
+    PYTHON_EXECUTABLE=${PYBIN}/python${PY_VERSION_NUMBER}
     #PYTHON_INCLUDE_DIR=$( find -L ${PYBIN}/../include/ -name Python.h -exec dirname {} \; )
 
     # echo ""
@@ -77,7 +77,7 @@ for PYVER in ${PYTHON_VERS[@]}; do
         -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
         -DGTSAM_USE_QUATERNIONS=OFF \
         -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-        -DGTSAM_PYTHON_VERSION=$VERSION_NUMBER \
+        -DGTSAM_PYTHON_VERSION=$PY_VERSION_NUMBER \
         -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
         -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
         -DCMAKE_INSTALL_PREFIX="$BUILDDIR/../gtsam_install" \
@@ -89,9 +89,6 @@ for PYVER in ${PYTHON_VERS[@]}; do
         -DBUILD_STATIC_METIS=ON \
         -DGTSAM_BUILD_PYTHON=ON \
         -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        # -DGTSAM_USE_CUSTOM_PYTHON_LIBRARY=ON \
-        # -DPYTHON_INCLUDE_DIRS:PATH=${PYTHON_INCLUDE_DIR} \
-        # -DPYTHON_LIBRARY:FILEPATH=${PYTHON_LIBRARY}
     ec=$?
 
     if [ $ec -ne 0 ]; then
@@ -106,7 +103,7 @@ for PYVER in ${PYTHON_VERS[@]}; do
     # "${PYBIN}/pip" wheel . -w "/io/wheelhouse/"
     cd python
     
-    "${PYBIN}/python3" setup.py bdist_wheel
+    "${PYBIN}/python${PY_VERSION_NUMBER}" setup.py bdist_wheel
     cp ./dist/*.whl $CURRDIR/wheelhouse_unrepaired
 done
 
