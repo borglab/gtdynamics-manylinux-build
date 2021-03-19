@@ -12,14 +12,14 @@ on:
 
 jobs:
   # build-linux:
-  #   name: New Wrapper Linux Build
+  #   name: Linux Wrapper Build
   #   runs-on: ubuntu-latest
   #   strategy:
   #     matrix:
   #       pyversion: ["cp36-cp36m", "cp37-cp37m", "cp38-cp38", "cp39-cp39"]
   #   steps:
   #   - name: Checkout
-  #     uses: actions/checkout@master
+  #     uses: actions/checkout@v2
   #   - name: Build the Linux wheels
   #     run: |
   #       sudo docker run --rm -e PLAT=manylinux_2_24_x86_64 -e PYTHON_VERSION=${{ matrix.pyversion }} -v `pwd`:/io varunagrawal/gtdynamics-manylinux:latest /io/build-wheels.sh
@@ -36,10 +36,10 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        pyversion: [3.8", "3.9"]
+        pyversion: ["3.8", "3.9"]
     steps:
     - name: Checkout
-      uses: actions/checkout@master
+      uses: actions/checkout@v2
     - name: Build the macOS wheels
       run: |
         ./build-macos.sh ${{ matrix.pyversion }}
