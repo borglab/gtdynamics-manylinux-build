@@ -59,7 +59,7 @@ cd boost_1_73_0
 
 ###################################################
 # Install GTSAM
-git clone https://github.com/borglab/gtsam.git -b develop
+git clone https://github.com/borglab/gtsam.git -b develop $CURRDIR/gtsam
 
 BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
 mkdir -p $BUILDDIR
@@ -94,18 +94,18 @@ make -j4 install
 
 ###################################################
 # Install gtwrap for wrapping
-git clone https://github.com/borglab/wrap.git /gtwrap
-mkdir -p /gtwrap/build
-cd /gtwrap/build
+git clone https://github.com/borglab/wrap.git $CURRDIR/gtwrap
+mkdir -p $CURRDIR/gtwrap/build
+cd $CURRDIR/gtwrap/build
 cmake -DWRAP_PYTHON_VERSION=$PYVER_NUM ..
 make -j4 && make --silent install
-cd /
+cd $CURRDIR
 
 
 ###################################################
 # Build GTDynamics with the wrapper
 # Clone GTDynamics
-git clone https://varunagrawal:$GTDYNAMICS_PASSWORD@github.com/borglab/gtdynamics.git -b master /gtdynamics
+git clone https://varunagrawal:$GTDYNAMICS_PASSWORD@github.com/borglab/gtdynamics.git -b master $CURRDIR/gtdynamics
 
 # Set the build directory
 BUILDDIR="$CURRDIR/gtdynamics_$PYTHONVER/gtdynamics_build"
@@ -116,7 +116,7 @@ cd $BUILDDIR
 ln -s /opt/rh/devtoolset-7/root/usr/bin/gcc /usr/local/bin/gcc
 ln -s /opt/rh/devtoolset-7/root/usr/bin/g++ /usr/local/bin/c++
 
-cmake /gtdynamics \
+cmake $CURRDIR/gtdynamics \
     -DCMAKE_BUILD_TYPE=Release \
     -DGTDYNAMICS_BUILD_PYTHON=ON \
     -DWRAP_PYTHON_VERSION=$PYVER_NUM \
