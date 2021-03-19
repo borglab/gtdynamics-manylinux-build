@@ -47,29 +47,24 @@ mkdir -p $CURRDIR/wheelhouse
 
 ###################################################
 # Setup Python env variables
-ORIGPATH=$PATH
-
 declare -a PYTHON_VERSION=( $1 )
 
 # Compile wheels
 python -c "import sys; print(sys.version)"
+PYVER_NUM=$(python -c "import sys;print(sys.version.split(\" \")[0])")
 
-# PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
-# PYVER_NUM=$($PYBIN/python -c "import sys;print(sys.version.split(\" \")[0])")
-# PYTHONVER="$(basename $(dirname $PYBIN))"
+# export PATH=$PYBIN:$PYBIN:/usr/local/bin:$PATH
+pip3 install -r ./requirements.txt
+pip3 install delocate
 
-# export PATH=$PYBIN:$PYBIN:/usr/local/bin:$ORIGPATH
-# "${PYBIN}/pip3" install -r ./requirements.txt
-# "${PYBIN}/pip3" install delocate
+PYTHON_EXECUTABLE=python${PYTHON_VERSION}
+PYTHON_INCLUDE_DIR=$(${PYTHON_EXECUTABLE} -c "from sysconfig import get_paths as gp; print(gp()['include'])")
+PYTHON_LIBRARY=$(${PYTHON_EXECUTABLE} -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
 
-# PYTHON_EXECUTABLE=${PYBIN}/python${PYTHON_VERSION}
-# PYTHON_INCLUDE_DIR=$( find -L ${PYBIN}/../include/ -name Python.h -exec dirname {} \; )
-# PYTHON_LIBRARY=$(${PYTHON_EXECUTABLE} -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-
-# echo ""
-# echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
-# echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
-# echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
+echo ""
+echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
+echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
+echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 
 # ###################################################
 # # Install GTSAM
