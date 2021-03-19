@@ -56,7 +56,7 @@ declare -a PYTHON_VERSION=( $1 )
 
 # Compile wheels
 PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
-ls /usr/local/opt/*
+ls /tmp/hostedtoolcache
 # PYVER_NUM=$($PYBIN/python -c "import sys;print(sys.version.split(\" \")[0])")
 # PYTHONVER="$(basename $(dirname $PYBIN))"
 
