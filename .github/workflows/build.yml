@@ -26,14 +26,14 @@ jobs:
   #       # cleanup for custom runner
   #       sudo chown -R $(whoami):$(whoami) .
   #   - name: Archive wheels
-  #     uses: actions/upload-artifact@v1
+  #     uses: actions/upload-artifact@v2
   #     with:
   #       name: gtdynamics-1.0.0-${{ matrix.pyversion }}-manylinux_2_24_x86_64.whl
   #       path: wheelhouse/gtdynamics-1.0.0-${{ matrix.pyversion }}-manylinux_2_24_x86_64.whl
 
   build-mac:
     name: macOS Wrapper Build
-    runs-on: macos-latest
+    runs-on: macos-10.15
     strategy:
       matrix:
         pyversion: ["3.8", "3.9"]
@@ -44,7 +44,7 @@ jobs:
       run: |
         ./build-macos.sh ${{ matrix.pyversion }}
     - name: Archive wheels
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: wheels-macos-${{ matrix.pyversion }}
         path: ./wheelhouse

@@ -21,6 +21,7 @@ function retry {
   return 0
 }
 
+###################################################
 brew update
 # brew uninstall bazel
 # brew upgrade
@@ -28,6 +29,7 @@ brew install wget python cmake || true
 
 CURRDIR=$(pwd)
 
+###################################################
 # Build Boost staticly
 mkdir -p boost_build
 cd boost_build
@@ -37,12 +39,14 @@ cd boost_1_73_0
 ./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
 ./b2 -j$(sysctl -n hw.logicalcpu) cxxflags="-fPIC" runtime-link=static variant=release link=static install
 
+###################################################
+# Setup wheelhouse
 cd $CURRDIR
 mkdir -p $CURRDIR/wheelhouse_unrepaired
 mkdir -p $CURRDIR/wheelhouse
 
-git clone https://github.com/borglab/gtsam.git -b develop
-
+###################################################
+# Setup Python env variables
 ORIGPATH=$PATH
 
 PYTHON_LIBRARY=$(cd $(dirname $0); pwd)/libpython-not-needed-symbols-exported-by-interpreter
@@ -52,27 +56,33 @@ declare -a PYTHON_VERSION=( $1 )
 
 # Compile wheels
 PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
-"${PYBIN}/pip3" install -r ./requirements.txt
+PYVER_NUM=$($PYBIN/python -c "import sys;print(sys.version.split(\" \")[0])")
 PYTHONVER="$(basename $(dirname $PYBIN))"
-BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
-mkdir -p $BUILDDIR
-cd $BUILDDIR
+
 export PATH=$PYBIN:$PYBIN:/usr/local/bin:$ORIGPATH
+"${PYBIN}/pip3" install -r ./requirements.txt
 "${PYBIN}/pip3" install delocate
 
 PYTHON_EXECUTABLE=${PYBIN}/python${PYTHON_VERSION}
-#PYTHON_INCLUDE_DIR=$( find -L ${PYBIN}/../include/ -name Python.h -exec dirname {} \; )
+PYTHON_INCLUDE_DIR=$( find -L ${PYBIN}/../include/ -name Python.h -exec dirname {} \; )
+echo ""
+echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
+echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
+echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 
-# echo ""
-# echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
-# echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
-# echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
+###################################################
+# Install GTSAM
+git clone https://github.com/borglab/gtsam.git -b develop
+
+BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
+mkdir -p $BUILDDIR
+cd $BUILDDIR
 
 cmake $CURRDIR/gtsam -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-    -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
+    -DGTSAM_PYTHON_VERSION=$PYVER_NUM \
     -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
     -DCMAKE_INSTALL_PREFIX="$BUILDDIR/../gtsam_install" \
@@ -93,14 +103,54 @@ if [ $ec -ne 0 ]; then
 fi
 set -e -x
 
-make -j$(sysctl -n hw.logicalcpu) install
+make -j4 install
 
-# "${PYBIN}/pip" wheel . -w "/io/wheelhouse/"
+###################################################
+# Install gtwrap for wrapping
+git clone https://github.com/borglab/wrap.git /gtwrap
+mkdir -p /gtwrap/build
+cd /gtwrap/build
+cmake -DWRAP_PYTHON_VERSION=$PYVER_NUM ..
+make -j4 && make --silent install
+cd /
+
+###################################################
+# Build GTDynamics with the wrapper
+# Clone GTDynamics
+git clone https://varunagrawal:$GTDYNAMICS_PASSWORD@github.com/borglab/gtdynamics.git -b master /gtdynamics
+
+# Set the build directory
+BUILDDIR="$CURRDIR/gtdynamics_$PYTHONVER/gtdynamics_build"
+mkdir -p $BUILDDIR
+cd $BUILDDIR
+
+# Set the C++ compilers
+ln -s /opt/rh/devtoolset-7/root/usr/bin/gcc /usr/local/bin/gcc
+ln -s /opt/rh/devtoolset-7/root/usr/bin/g++ /usr/local/bin/c++
+
+cmake /gtdynamics \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DGTDYNAMICS_BUILD_PYTHON=ON \
+    -DWRAP_PYTHON_VERSION=$PYVER_NUM \
+    -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR \
+    -DPYTHON_LIBRARY=$PYTHON_LIBRARY; ec=$?
+
+if [ $ec -ne 0 ]; then
+    echo "Error:"
+    cat ./CMakeCache.txt
+    exit $ec
+fi
+set -e -x
+
+make -j4 install
+
+
+###################################################
+# Build and fix the wheels
 cd python
 
 "${PYBIN}/python${PYTHON_VERSION}" setup.py bdist_wheel
 cp ./dist/*.whl $CURRDIR/wheelhouse_unrepaired
-
 
 # Bundle external shared libraries into the wheels
 for whl in $CURRDIR/wheelhouse_unrepaired/*.whl; do
