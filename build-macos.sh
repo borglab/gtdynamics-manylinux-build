@@ -53,7 +53,7 @@ declare -a PYTHON_VERSION=( $1 )
 
 # Compile wheels
 TOOLCACHE_PATH="/Users/runner/hostedtoolcache/Python/"
-ls TOOLCACHE_PATH/$PYTHON_VERSION*/
+ls $TOOLCACHE_PATH/$PYTHON_VERSION*/
 
 # PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
 # PYVER_NUM=$($PYBIN/python -c "import sys;print(sys.version.split(\" \")[0])")
