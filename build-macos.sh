@@ -21,13 +21,13 @@ function retry {
   return 0
 }
 
-# ###################################################
-# brew update
-# # brew uninstall bazel
-# # brew upgrade
-# brew install wget python cmake || true
+###################################################
+brew update
+# brew uninstall bazel
+# brew upgrade
+brew install wget python cmake || true
 
-# CURRDIR=$(pwd)
+CURRDIR=$(pwd)
 
 # ###################################################
 # # Build Boost staticly
@@ -52,8 +52,7 @@ ORIGPATH=$PATH
 declare -a PYTHON_VERSION=( $1 )
 
 # Compile wheels
-TOOLCACHE_PATH="/Users/runner/hostedtoolcache/Python"
-ls $TOOLCACHE_PATH/$PYTHON_VERSION*/**
+python -c "import sys; print(sys.version)"
 
 # PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
 # PYVER_NUM=$($PYBIN/python -c "import sys;print(sys.version.split(\" \")[0])")
