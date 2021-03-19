@@ -21,23 +21,23 @@ function retry {
   return 0
 }
 
-###################################################
-brew update
-# brew uninstall bazel
-# brew upgrade
-brew install wget python cmake || true
+# ###################################################
+# brew update
+# # brew uninstall bazel
+# # brew upgrade
+# brew install wget python cmake || true
 
-CURRDIR=$(pwd)
+# CURRDIR=$(pwd)
 
-###################################################
-# Build Boost staticly
-mkdir -p boost_build
-cd boost_build
-retry 3 wget https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.gz
-tar xzf boost_1_73_0.tar.gz
-cd boost_1_73_0
-./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
-./b2 -j$(sysctl -n hw.logicalcpu) cxxflags="-fPIC" runtime-link=static variant=release link=static install
+# ###################################################
+# # Build Boost staticly
+# mkdir -p boost_build
+# cd boost_build
+# retry 3 wget https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.gz
+# tar xzf boost_1_73_0.tar.gz
+# cd boost_1_73_0
+# ./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
+# ./b2 -j$(sysctl -n hw.logicalcpu) cxxflags="-fPIC" runtime-link=static variant=release link=static install
 
 ###################################################
 # Setup wheelhouse
@@ -52,8 +52,8 @@ ORIGPATH=$PATH
 declare -a PYTHON_VERSION=( $1 )
 
 # Compile wheels
-TOOLCACHE_PATH="/Users/runner/hostedtoolcache/Python/"
-ls $TOOLCACHE_PATH/$PYTHON_VERSION*/
+TOOLCACHE_PATH="/Users/runner/hostedtoolcache/Python"
+ls $TOOLCACHE_PATH/$PYTHON_VERSION*/**
 
 # PYBIN="/usr/local/opt/python@$PYTHON_VERSION/bin"
 # PYVER_NUM=$($PYBIN/python -c "import sys;print(sys.version.split(\" \")[0])")
