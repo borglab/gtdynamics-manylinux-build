@@ -16,20 +16,20 @@ jobs:
   #   runs-on: ubuntu-latest
   #   strategy:
   #     matrix:
-  #       pyversion: ["cp36-cp36m", "cp37-cp37m", "cp38-cp38", "cp39-cp39"]
+  #       python-version: ["cp36-cp36m", "cp37-cp37m", "cp38-cp38", "cp39-cp39"]
   #   steps:
   #   - name: Checkout
   #     uses: actions/checkout@v2
   #   - name: Build the Linux wheels
   #     run: |
-  #       sudo docker run --rm -e PLAT=manylinux_2_24_x86_64 -e PYTHON_VERSION=${{ matrix.pyversion }} -v `pwd`:/io varunagrawal/gtdynamics-manylinux:latest /io/build-wheels.sh
+  #       sudo docker run --rm -e PLAT=manylinux_2_24_x86_64 -e PYTHON_VERSION=${{ matrix.python-version }} -v `pwd`:/io varunagrawal/gtdynamics-manylinux:latest /io/build-wheels.sh
   #       # cleanup for custom runner
   #       sudo chown -R $(whoami):$(whoami) .
   #   - name: Archive wheels
   #     uses: actions/upload-artifact@v2
   #     with:
-  #       name: gtdynamics-1.0.0-${{ matrix.pyversion }}-manylinux_2_24_x86_64.whl
-  #       path: wheelhouse/gtdynamics-1.0.0-${{ matrix.pyversion }}-manylinux_2_24_x86_64.whl
+  #       name: gtdynamics-1.0.0-${{ matrix.python-version }}-manylinux_2_24_x86_64.whl
+  #       path: wheelhouse/gtdynamics-1.0.0-${{ matrix.python-version }}-manylinux_2_24_x86_64.whl
 
   build-mac:
     name: macOS Wrapper Build
@@ -40,17 +40,22 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    # - name: Homebrew set up
+    #   run: |
+    #     brew update
+    #     # brew upgrade
+    #     brew install wget python cmake || true
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - name: Build the macOS wheels
       run: |
-        ./build-macos.sh ${{ matrix.pyversion }}
+        ./build-macos.sh ${{ matrix.python-version }}
       env:
         GTDYNAMICS_PASSWORD: ${{ secrets.GTDYNAMICS_PASSWORD }}
     - name: Archive wheels
       uses: actions/upload-artifact@v2
       with:
-        name: wheels-macos-${{ matrix.pyversion }}
+        name: wheels-macos-${{ matrix.python-version }}
         path: ./wheelhouse

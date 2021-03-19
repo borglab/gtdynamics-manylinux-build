@@ -21,12 +21,6 @@ function retry {
   return 0
 }
 
-###################################################
-brew update
-# brew uninstall bazel
-# brew upgrade
-brew install wget python cmake || true
-
 CURRDIR=$(pwd)
 
 # ###################################################
