@@ -43,7 +43,7 @@ echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 pip3 install -r ./requirements.txt
 pip3 install delocate
 
-PATH=/Users/$USER/Library/Python/3.8/bin:$PATH
+export PATH=/Users/$USER/Library/Python/3.8/bin:$PATH
 
 ###################################################
 # Build Boost staticly
@@ -52,7 +52,7 @@ cd boost_build
 retry 3 wget https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
 tar xzf boost_1_72_0.tar.gz
 cd boost_1_72_0
-./bootstrap.sh --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
+./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
 ./b2 -j$(sysctl -n hw.logicalcpu) cxxflags="-fPIC" runtime-link=static variant=release link=static install
 
 ###################################################
@@ -63,9 +63,9 @@ BUILDDIR="$CURRDIR/gtsam_$PYTHONVER/gtsam_build"
 mkdir -p $BUILDDIR
 cd $BUILDDIR
 
-cmake $CURRDIR/gtsam
+cmake $CURRDIR/gtsam \
   -DCMAKE_BUILD_TYPE=Release \
-  -DGTSAM_BUILD_TESTS=OFF
+  -DGTSAM_BUILD_TESTS=OFF \
   -DGTSAM_BUILD_UNSTABLE=ON \
   -DGTSAM_WITH_TBB=OFF \
   -DGTSAM_USE_QUATERNIONS=OFF \
