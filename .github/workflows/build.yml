@@ -25,6 +25,8 @@ jobs:
         sudo docker run --rm -e PLAT=manylinux_2_24_x86_64 -e PYTHON_VERSION=${{ matrix.python-version }} -v `pwd`:/io varunagrawal/gtdynamics-manylinux:latest /io/build-linux-wheels.sh
         # cleanup for custom runner
         sudo chown -R $(whoami):$(whoami) .
+      env:
+        GTDYNAMICS_PASSWORD: ${{ secrets.GTDYNAMICS_PASSWORD }}
     - name: Archive wheels
       uses: actions/upload-artifact@v2
       with:
