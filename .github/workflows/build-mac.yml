@@ -1,0 +1,36 @@
+name: Python Package Build for macOS
+
+on:
+  push:
+    branches:
+      - main
+      - cayley
+  pull_request:
+    types: [ assigned, opened, synchronize, reopened ]
+  repository_dispatch:
+    types: [pybind-wrapper]
+
+jobs:
+  build:
+    name: macOS Wrapper Build
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Build the macOS wheels
+      run: |
+        ./build-macos-wheels.sh ${{ matrix.python-version }}
+      env:
+        GTDYNAMICS_PASSWORD: ${{ secrets.GTDYNAMICS_PASSWORD }}
+    - name: Archive wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels-macos-${{ matrix.python-version }}
+        path: wheelhouse/gtdynamics-1.0.0-py${{ matrix.python-version }}-none-any.whl
