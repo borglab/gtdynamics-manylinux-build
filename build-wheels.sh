@@ -33,6 +33,37 @@ echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 echo ""
 
 ###################################################
+# Install GTSAM
+git clone https://github.com/borglab/gtsam.git -b develop /gtsam
+
+BUILDDIR=/gtsam/build
+mkdir -p $BUILDDIR
+cd $BUILDDIR
+
+cmake /gtsam \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DGTSAM_BUILD_TESTS=-OFF \
+  -DGTSAM_BUILD_UNSTABLE=ON \
+  -DGTSAM_WITH_TBB=OFF \
+  -DGTSAM_USE_QUATERNIONS=OFF \
+  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+  -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+  -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
+  -DGTSAM_ROT3_EXPMAP=ON \
+  -DGTSAM_POSE3_EXPMAP=ON
+ec=$?
+
+if [ $ec -ne 0 ]; then
+    echo "Error:"
+    cat ./CMakeCache.txt
+    exit $ec
+fi
+set -e -x
+
+make -j4 install
+
+
+###################################################
 # Install gtwrap for wrapping
 # git clone https://github.com/borglab/wrap.git /gtwrap
 mkdir -p /gtwrap/build2
