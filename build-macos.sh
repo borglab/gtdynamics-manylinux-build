@@ -52,7 +52,7 @@ cd boost_build
 retry 3 wget https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
 tar xzf boost_1_72_0.tar.gz
 cd boost_1_72_0
-./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
+./bootstrap.sh --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
 ./b2 -j$(sysctl -n hw.logicalcpu) cxxflags="-fPIC" runtime-link=static variant=release link=static install
 
 ###################################################
