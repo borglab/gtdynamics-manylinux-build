@@ -2,18 +2,10 @@
 
 CURRDIR=$(pwd)
 
-# Install latest version of GTSAM
-add-apt-repository -y ppa:borglab/gtsam-develop
-apt-get -y update
-apt-get install -y libgtsam-dev libgtsam-unstable-dev
+###################################################
+# Set all the Python variables first
 
-# Clone GTDynamics
-git clone https://github.com/borglab/gtdynamics.git -b master /gtdynamics
-
-# Set the build directory
-BUILDDIR="/io/gtdynamics_build"
-
-# FIX auditwheel
+# Fix auditwheel
 # https://github.com/pypa/auditwheel/issues/136
 echo /opt/_internal/*/*/*/*/auditwheel
 cd /opt/_internal/tools/lib64/python3.7/site-packages/auditwheel
@@ -40,8 +32,35 @@ echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
 echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 echo ""
 
+###################################################
+# Install gtwrap for wrapping
+# git clone https://github.com/borglab/wrap.git /gtwrap
+mkdir -p /gtwrap/build2
+cd /gtwrap/build2
+cmake -DWRAP_PYTHON_VERSION=$PYVER_NUM ..
+make -j4 && make --silent install
+cd /
+
+###################################################
+# Build GTDynamics with the wrapper
+# Clone GTDynamics
+git clone https://varunagrawal:$GTDYNAMICS_PASSWORD@github.com/borglab/gtdynamics.git -b master /gtdynamics
+
+# Set the build directory
+BUILDDIR="/io/gtdynamics_build"
+mkdir -p $BUILDDIR
+cd $BUILDDIR
+
+# Set the C++ compilers
+ln -s /opt/rh/devtoolset-7/root/usr/bin/gcc /usr/local/bin/gcc
+ln -s /opt/rh/devtoolset-7/root/usr/bin/g++ /usr/local/bin/c++
+
 cmake /gtdynamics -DCMAKE_BUILD_TYPE=Release \
-    -DGTDYNAMICS_BUILD_PYTHON=ON; ec=$?
+    -DGTDYNAMICS_BUILD_PYTHON=ON \
+    -DCMAKE_INSTALL_LIBDIR=lib64 \
+    -DWRAP_PYTHON_VERSION=$PYVER_NUM \
+    -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR \
+    -DPYTHON_LIBRARY=$PYTHON_LIBRARY; ec=$?
 
 if [ $ec -ne 0 ]; then
     echo "Error:"
@@ -50,18 +69,19 @@ if [ $ec -ne 0 ]; then
 fi
 set -e -x
 
-make -j$(nproc) install
+make -j4 install
 
+###################################################
+# Build the wheels
 mkdir -p /io/wheelhouse
 
-# "${PYBIN}/pip" wheel . -w "/io/wheelhouse/"
 cd python
 
 "${PYBIN}/python" setup.py bdist_wheel --python-tag=$PYTHONVER --plat-name=$PLAT
-# cp ./dist/*.whl /io/wheelhouse/
 
 # Bundle external shared libraries into the wheels
 for whl in ./dist/*.whl; do
+    auditwheel show $whl
     auditwheel repair "$whl" -w /io/wheelhouse/
 done
 
@@ -71,9 +91,3 @@ for whl in /io/wheelhouse/*.whl; do
     new_filename=$(echo $new_filename | sed "s#-none-#-#g")
     mv $whl $new_filename
 done
-
-# Install packages and test
-# for PYBIN in /opt/python/*/bin/; do
-#     "${PYBIN}/pip" install python-manylinux-demo --no-index -f /io/wheelhouse
-#     (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
-# done
