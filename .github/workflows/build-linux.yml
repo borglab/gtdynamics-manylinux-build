@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Build the Linux wheels
       run: |
-        sudo docker run --rm -e PLAT=manylinux_2_24_x86_64 -e PYTHON_VERSION=${{ matrix.python-version }} -v `pwd`:/io varunagrawal/gtdynamics-manylinux:latest -e $GTDYNAMICS_PASSWORD /io/build-linux-wheels.sh
+        sudo docker run --rm -e PLAT=manylinux_2_24_x86_64 -e PYTHON_VERSION=${{ matrix.python-version }} -v `pwd`:/io varunagrawal/gtdynamics-manylinux:latest -e GTDYNAMICS_PASSWORD /io/build-linux-wheels.sh
         # cleanup for custom runner
         sudo chown -R $(whoami):$(whoami) .
       env:
