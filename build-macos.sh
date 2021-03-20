@@ -24,21 +24,17 @@ function retry {
 CURRDIR=$(pwd)
 
 ###################################################
-# Setup wheelhouse
-cd $CURRDIR
-mkdir -p $CURRDIR/wheelhouse_unrepaired
-mkdir -p $CURRDIR/wheelhouse
-
-###################################################
 # Setup Python env variables
 PYTHON_VERSION=$1
 
-python -c "import sys; print(sys.version)"
-PYVER_NUM=$(python -c "import sys;print(sys.version.split(\" \")[0])")
+PYTHON_MAJOR_VERSION=(${PYTHON_VERSION//./ })
+# Need full Python path so that Pybind11 can pick it up correctly
+PYTHON_EXECUTABLE=$(python -c "import sys; print(sys.executable)")
 
-PYTHON_EXECUTABLE=python${PYTHON_VERSION}
-PYTHON_INCLUDE_DIR=$(${PYTHON_EXECUTABLE} -c "from sysconfig import get_paths as gp; print(gp()['include'])")
-PYTHON_LIBRARY=$(${PYTHON_EXECUTABLE} -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+PYVER_NUM=$(${PYTHON_EXECUTABLE} -c "import sys;print(sys.version.split(\" \")[0])")
+PYTHON_INCLUDE_DIR=$(${PYTHON_EXECUTABLE} -c "from sysconfig import get_paths as gp; print(gp()[\"include\"])")
+PYTHON_LIBRARY=$(${PYTHON_EXECUTABLE} -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var(\"LIBDIR\"))")
+PYTHONVER=python$PYVER_NUM
 
 echo "PYTHON_EXECUTABLE:${PYTHON_EXECUTABLE}"
 echo "PYTHON_INCLUDE_DIR:${PYTHON_INCLUDE_DIR}"
@@ -47,13 +43,15 @@ echo "PYTHON_LIBRARY:${PYTHON_LIBRARY}"
 pip3 install -r ./requirements.txt
 pip3 install delocate
 
+PATH=/Users/$USER/Library/Python/3.8/bin:$PATH
+
 ###################################################
 # Build Boost staticly
 mkdir -p boost_build
 cd boost_build
-retry 3 wget https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.gz
-tar xzf boost_1_73_0.tar.gz
-cd boost_1_73_0
+retry 3 wget https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.gz
+tar xzf boost_1_72_0.tar.gz
+cd boost_1_72_0
 ./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex clang-darwin
 ./b2 -j$(sysctl -n hw.logicalcpu) cxxflags="-fPIC" runtime-link=static variant=release link=static install
 
@@ -72,17 +70,15 @@ cmake $CURRDIR/gtsam -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_PYTHON_VERSION=$PYVER_NUM \
     -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
-    -DCMAKE_INSTALL_PREFIX="$BUILDDIR/../gtsam_install" \
     -DBoost_USE_STATIC_LIBS=ON \
     -DBoost_USE_STATIC_RUNTIME=ON \
     -DBOOST_ROOT=$CURRDIR/boost_install \
-    -DCMAKE_PREFIX_PATH=$CURRDIR/boost_install/lib/cmake/Boost-1.73.0/ \
+    -DCMAKE_PREFIX_PATH=$CURRDIR/boost_install/lib/cmake/Boost-1.72.0/ \
     -DBoost_NO_SYSTEM_PATHS=OFF \
     -DBUILD_STATIC_METIS=ON \
     -DGTSAM_BUILD_PYTHON=ON \
-    -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} \
-    -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR \
-    -DPYTHON_LIBRARY=$PYTHON_LIBRARY
+    -DGTSAM_WITH_TBB=OFF \
+    -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
 ec=$?
 
 if [ $ec -ne 0 ]; then
@@ -114,13 +110,15 @@ BUILDDIR="$CURRDIR/gtdynamics_$PYTHONVER/gtdynamics_build"
 mkdir -p $BUILDDIR
 cd $BUILDDIR
 
-# Set the C++ compilers
-ln -s /opt/rh/devtoolset-7/root/usr/bin/gcc /usr/local/bin/gcc
-ln -s /opt/rh/devtoolset-7/root/usr/bin/g++ /usr/local/bin/c++
+# Install SDFormat8
+brew tap osrf/simulation
+brew install sdformat8
 
 cmake $CURRDIR/gtdynamics \
     -DCMAKE_BUILD_TYPE=Release \
     -DGTDYNAMICS_BUILD_PYTHON=ON \
+    -DBoost_USE_STATIC_LIBS=ON \
+    -DBoost_USE_STATIC_RUNTIME=ON \
     -DWRAP_PYTHON_VERSION=$PYVER_NUM \
     -DPYTHON_INCLUDE_DIR=$PYTHON_INCLUDE_DIR \
     -DPYTHON_LIBRARY=$PYTHON_LIBRARY; ec=$?
@@ -134,13 +132,17 @@ set -e -x
 
 make -j4 install
 
+###################################################
+# Setup wheelhouse
+mkdir -p $CURRDIR/wheelhouse_unrepaired
+mkdir -p $CURRDIR/wheelhouse
 
 ###################################################
 # Build and fix the wheels
 cd python
 
-"${PYBIN}/python${PYTHON_VERSION}" setup.py bdist_wheel
-cp ./dist/*.whl $CURRDIR/wheelhouse_unrepaired
+${PYTHON_EXECUTABLE} setup.py bdist_wheel
+cp ./dist/*.whl $CURRDIR/wheelhouse_unrepaired/
 
 # Bundle external shared libraries into the wheels
 for whl in $CURRDIR/wheelhouse_unrepaired/*.whl; do
@@ -148,16 +150,3 @@ for whl in $CURRDIR/wheelhouse_unrepaired/*.whl; do
     delocate-wheel -w "$CURRDIR/wheelhouse" -v "$whl"
     rm $whl
 done
-
-# for whl in /io/wheelhouse/*.whl; do
-#     new_filename=$(echo $whl | sed "s#\.none-manylinux_2_24_x86_64\.#.#g")
-#     new_filename=$(echo $new_filename | sed "s#\.manylinux_2_24_x86_64\.#.#g") # For 37 and 38
-#     new_filename=$(echo $new_filename | sed "s#-none-#-#g")
-#     mv $whl $new_filename
-# done
-
-# Install packages and test
-# for PYBIN in /opt/python/*/bin/; do
-#     "${PYBIN}/pip" install python-manylinux-demo --no-index -f /io/wheelhouse
-#     (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
-# done
