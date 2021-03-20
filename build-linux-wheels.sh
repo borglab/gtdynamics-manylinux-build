@@ -65,9 +65,9 @@ make -j4 install
 
 ###################################################
 # Install gtwrap for wrapping
-# git clone https://github.com/borglab/wrap.git /gtwrap
-mkdir -p /gtwrap/build2
-cd /gtwrap/build2
+git clone https://github.com/borglab/wrap.git /gtwrap
+mkdir -p /gtwrap/build
+cd /gtwrap/build
 cmake -DWRAP_PYTHON_VERSION=$PYVER_NUM ..
 make -j4 && make --silent install
 cd /
